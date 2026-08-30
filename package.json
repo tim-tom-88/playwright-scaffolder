@@ -17,10 +17,12 @@
   "bin": "dist/cli/index.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/cli/index.js"
+    "start": "node dist/cli/index.js",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "prettier": "^3.9.6",
     "typescript": "^7.0.2"
   }
 }
