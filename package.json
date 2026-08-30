@@ -20,8 +20,10 @@
     "start": "node dist/cli/index.js"
   },
   "dependencies": {
+    "fs": "^0.0.1-security"
   },
   "devDependencies": {
-     "typescript": "^7.0.2"
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
   }
 }
