@@ -16,11 +16,12 @@
   "main": "dist/cli/index.js",
   "bin": "dist/cli/index.js",
   "scripts": {
-    "test": "test",
     "build": "npx tsc",
     "start": "node dist/cli/index.js"
   },
   "dependencies": {
-    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+     "typescript": "^7.0.2"
   }
 }
