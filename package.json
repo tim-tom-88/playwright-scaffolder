@@ -1,0 +1,27 @@
+{
+  "name": "playwright-scaffolder",
+  "version": "1.0.0",
+  "description": "Adding additional help to the existing playwright bootstrap",
+  "homepage": "https://github.com/tim-tom-88/playwright-scaffolder#readme",
+  "bugs": {
+    "url": "https://github.com/tim-tom-88/playwright-scaffolder/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tim-tom-88/playwright-scaffolder.git"
+  },
+  "license": "MIT",
+  "author": "Tom Hodgson",
+  "type": "commonjs",
+  "main": "dist/cli/index.js",
+  "bin": "dist/cli/index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/cli/index.js"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+     "typescript": "^7.0.2"
+  }
+}
