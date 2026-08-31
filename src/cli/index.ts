@@ -1,5 +1,4 @@
-import * as repo from '../repo/inspectProject'
-
+import * as repo from '../repo/index'
 import * as prompts from './prompt'
 import * as output from './styling'
 
@@ -76,14 +75,23 @@ const main = async () => {
     console.log(
       `  Initialise a new npm project with ${output.value('npm init')}.`,
     )
+    return
   }
+
   const scaffoldOptions: ScaffoldOptions = {
     installPlaywright,
     createPlaywrightConfig,
     architecture,
     testSuites,
   }
-  console.log(scaffoldOptions)
+  const directories = repo.getDirectories(scaffoldOptions)
+
+  if (await prompts.confirmScaffold(directories)) {
+    repo.scaffoldProject(projectRoot, directories)
+    output.success('Created scaffold structure', true)
+  } else {
+    output.italic('Scaffolding cancelled', true)
+  }
 }
 
 main()
