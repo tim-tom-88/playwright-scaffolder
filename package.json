@@ -24,5 +24,8 @@
     "@types/node": "^26.4.0",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.0"
   }
 }

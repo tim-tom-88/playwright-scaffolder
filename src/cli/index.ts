@@ -1,9 +1,12 @@
-import {
-  findPackageJson,
-  findTsConfig,
-  detectPackageManager,
-  detectPlaywright,
-} from '../repo/inspectProject'
+import * as repo from '../repo/inspectProject'
+
+import * as prompts from './prompt'
+
+import type {
+  ArchitectureChoice,
+  ScaffoldOptions,
+  TestSuite,
+} from '../types/project'
 
 const styles = {
   reset: '\x1b[0m',
@@ -26,48 +29,73 @@ const error = (message: string) =>
 const value = (text: string) =>
   `${styles.bold}${styles.cyan}${text}${styles.reset}`
 
-const currentDir = process.cwd()
-const projectRoot = findPackageJson(currentDir)
+let installPlaywright = false
+let createPlaywrightConfig = false
+let architecture: ArchitectureChoice
+let testSuites: TestSuite[]
 
-if (projectRoot) {
-  success(`Project root: ${value(projectRoot)}`)
+const main = async () => {
+  const currentDir = process.cwd()
+  const projectRoot = repo.findPackageJson(currentDir)
 
-  if (findTsConfig(projectRoot)) {
-    success(`TypeScript configuration: ${value('tsconfig.json')}`)
-  } else {
-    warning('TypeScript configuration: tsconfig.json not found')
-  }
+  if (projectRoot) {
+    success(`Project root: ${value(projectRoot)}`)
 
-  const packageManager = detectPackageManager(projectRoot)
+    if (repo.findTsConfig(projectRoot)) {
+      success(`TypeScript configuration: ${value('tsconfig.json')}`)
+    } else {
+      warning('TypeScript configuration: tsconfig.json not found')
+    }
 
-  if (packageManager) {
-    success(`Package manager: ${value(packageManager)}`)
-  } else {
-    warning(
-      'Package manager: unable to determine (no supported lockfile found)',
-    )
-  }
+    const packageManager = repo.detectPackageManager(projectRoot)
 
-  const playwrightSetup = detectPlaywright(projectRoot)
-
-  if (playwrightSetup) {
-    success(`Playwright project: ${value(playwrightSetup.playwrightRoot)}`)
-
-    if (playwrightSetup.playwrightConfig) {
-      success(
-        `Playwright configuration: ${value(playwrightSetup.playwrightConfig)}`,
-      )
+    if (packageManager) {
+      success(`Package manager: ${value(packageManager)}`)
     } else {
       warning(
-        `Playwright configuration: ${value('@playwright/test')} is installed, but no supported config file was found`,
+        'Package manager: unable to determine (no supported lockfile found)',
       )
     }
+
+    const playwrightSetup = repo.detectPlaywright(projectRoot)
+
+    if (playwrightSetup) {
+      success(`Playwright project: ${value(playwrightSetup.playwrightRoot)}`)
+
+      if (playwrightSetup.playwrightConfig) {
+        success(
+          `Playwright configuration: ${value(playwrightSetup.playwrightConfig)}`,
+        )
+        architecture = await prompts.askArchitecture()
+        testSuites = await prompts.askTestSuites()
+      } else {
+        warning(
+          `Playwright configuration: ${value('@playwright/test')} is installed, but no supported config file was found`,
+        )
+        createPlaywrightConfig = await prompts.askCreatePlaywrightConfig()
+        architecture = await prompts.askArchitecture()
+        testSuites = await prompts.askTestSuites()
+      }
+    } else {
+      warning('Playwright project: @playwright/test not found')
+      installPlaywright = await prompts.askInstallPlaywright()
+      createPlaywrightConfig = installPlaywright
+      architecture = await prompts.askArchitecture()
+      testSuites = await prompts.askTestSuites()
+    }
   } else {
-    warning('Playwright project: @playwright/test not found')
+    error(
+      `Project root: unable to determine (${value('package.json')} not found)`,
+    )
+    console.log(`  Initialise a new npm project with ${value('npm init')}.`)
   }
-} else {
-  error(
-    `Project root: unable to determine (${value('package.json')} not found)`,
-  )
-  console.log(`  Initialise a new npm project with ${value('npm init')}.`)
+  const scaffoldOptions: ScaffoldOptions = {
+    installPlaywright,
+    createPlaywrightConfig,
+    architecture,
+    testSuites,
+  }
+  console.log(scaffoldOptions)
 }
+
+main()
