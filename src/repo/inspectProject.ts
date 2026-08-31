@@ -1,11 +1,16 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import {
+  PackageManager,
+  PlaywrightSetup,
+  ScaffoldOptions,
+} from '../types/project'
 
 /**
+ * Searches this directory and its ancestors for a package.json.
  *
- * @param searchDirectory
- * @returns searchDirectory if package.json found or null if searched up to root and not found
- *
+ * @param searchDirectory - Directory from which to begin searching.
+ * @returns The directory containing package.json, or null if none is found.
  */
 export const findPackageJson = (searchDirectory: string): string | null => {
   if (fs.existsSync(path.join(searchDirectory, 'package.json'))) {
@@ -20,11 +25,15 @@ export const findPackageJson = (searchDirectory: string): string | null => {
   }
 }
 
+/**
+ * Checks whether the project root contains a TypeScript configuration.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @returns Whether tsconfig.json exists in the project root.
+ */
 export const findTsConfig = (projectRoot: string): boolean => {
   return fs.existsSync(path.join(projectRoot, 'tsconfig.json'))
 }
-
-type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 
 const packageManagers: Array<{
   manager: PackageManager
@@ -36,6 +45,12 @@ const packageManagers: Array<{
   { manager: 'bun', lockfiles: ['bun.lock', 'bun.lockb'] },
 ]
 
+/**
+ * Determines the project's package manager from its lockfile.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @returns The detected package manager, or undefined if no supported lockfile exists.
+ */
 export const detectPackageManager = (
   projectRoot: string,
 ): PackageManager | undefined => {
@@ -46,13 +61,15 @@ export const detectPackageManager = (
   )?.manager
 }
 
-export type PlaywrightSetup = {
-  playwrightRoot: string
-  playwrightConfig: string | undefined
-}
-
 const playwrightConfigFiles = ['playwright.config.ts', 'playwright.config.js']
 
+/**
+ * Recursively searches for a project that declares @playwright/test.
+ *
+ * @param projectRoot - Directory from which to begin searching.
+ * @returns The Playwright root and optional config filename, or null if Playwright is not found.
+ * @throws If a discovered package.json cannot be read or parsed.
+ */
 export const detectPlaywright = (
   projectRoot: string,
 ): PlaywrightSetup | null => {
