@@ -2,6 +2,7 @@ import {
   findPackageJson,
   findTsConfig,
   detectPackageManager,
+  detectPlaywright,
 } from '../repo/inspectProject'
 
 const styles = {
@@ -45,6 +46,24 @@ if (projectRoot) {
     warning(
       'Package manager: unable to determine (no supported lockfile found)',
     )
+  }
+
+  const playwrightSetup = detectPlaywright(projectRoot)
+
+  if (playwrightSetup) {
+    success(`Playwright project: ${value(playwrightSetup.playwrightRoot)}`)
+
+    if (playwrightSetup.playwrightConfig) {
+      success(
+        `Playwright configuration: ${value(playwrightSetup.playwrightConfig)}`,
+      )
+    } else {
+      warning(
+        `Playwright configuration: ${value('@playwright/test')} is installed, but no supported config file was found`,
+      )
+    }
+  } else {
+    warning('Playwright project: @playwright/test not found')
   }
 } else {
   error(
