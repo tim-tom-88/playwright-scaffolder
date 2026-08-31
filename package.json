@@ -18,10 +18,16 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/cli/index.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,json,md}": "prettier --write"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2"
   },
