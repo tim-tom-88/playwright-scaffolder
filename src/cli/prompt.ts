@@ -1,4 +1,5 @@
 import { confirm, select, checkbox } from '@inquirer/prompts'
+import * as output from './styling'
 import type { ArchitectureChoice, TestSuite } from '../types/project'
 
 export const askInstallPlaywright = async (): Promise<boolean> => {
@@ -33,26 +34,10 @@ export const askTestSuites = async (): Promise<TestSuite[]> => {
   })
 }
 
-export const directoryTree = (directories: string[]) => {
-  console.log('\ntests')
-
-  const children = directories.map((directory) =>
-    directory.replace('tests/', ''),
-  )
-
-  children.forEach((child, index) => {
-    const isLast = index === children.length - 1
-    const branch = isLast ? '└──' : '├──'
-
-    console.log(`${branch} ${child}`)
-  })
-  console.log('\n')
-}
-
 export const confirmScaffold = async (
   directories: string[],
 ): Promise<boolean> => {
-  directoryTree(directories)
+  output.directoryTree(directories)
   return confirm({
     message: 'Create this structure?',
   })

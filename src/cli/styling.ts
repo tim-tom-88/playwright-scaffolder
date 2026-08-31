@@ -9,7 +9,7 @@ const styles = {
   white: '\x1b[37m',
   blueBackground: '\x1b[44m',
 }
-export const title = (message: string, padding = false) =>
+export const title = (message: string) =>
   console.log(
     `${styles.bold}${styles.blueBackground}${styles.white}======= ${message} =======${styles.reset}\n`,
   )
@@ -34,7 +34,22 @@ export const error = (message: string, padding = false) => {
   console.log(`${styles.red}✗${styles.reset} ${message}`)
 }
 
-export const value = (text: string, padding = false) => {
-  if (padding) console.log()
+export const value = (text: string) => {
   return `${styles.bold}${styles.cyan}${text}${styles.reset}`
+}
+
+export const directoryTree = (directories: string[]) => {
+  console.log('\ntests')
+
+  const children = directories.map((directory) =>
+    directory.replace('tests/', ''),
+  )
+
+  children.forEach((child, index) => {
+    const isLast = index === children.length - 1
+    const branch = isLast ? '└──' : '├──'
+
+    console.log(`${branch} ${child}`)
+  })
+  console.log('\n')
 }
