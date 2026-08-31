@@ -1,9 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import type {
-  PackageManager,
-  PlaywrightSetup
-} from '../types/project'
+import type { PackageManager, PlaywrightSetup } from '../types/project'
 
 /**
  * Searches this directory and its ancestors for a package.json.

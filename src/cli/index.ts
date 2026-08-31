@@ -24,7 +24,9 @@ const main = async () => {
     output.success(`Project root: ${output.value(projectRoot)}`)
 
     if (repo.findTsConfig(projectRoot)) {
-      output.success(`TypeScript configuration: ${output.value('tsconfig.json')}`)
+      output.success(
+        `TypeScript configuration: ${output.value('tsconfig.json')}`,
+      )
     } else {
       output.warning('TypeScript configuration: tsconfig.json not found')
     }
@@ -42,7 +44,9 @@ const main = async () => {
     const playwrightSetup = repo.detectPlaywright(projectRoot)
 
     if (playwrightSetup) {
-      output.success(`Playwright project: ${output.value(playwrightSetup.playwrightRoot)}`)
+      output.success(
+        `Playwright project: ${output.value(playwrightSetup.playwrightRoot)}`,
+      )
 
       if (playwrightSetup.playwrightConfig) {
         output.success(
@@ -69,7 +73,9 @@ const main = async () => {
     output.error(
       `Project root: unable to determine (${output.value('package.json')} not found)`,
     )
-    console.log(`  Initialise a new npm project with ${output.value('npm init')}.`)
+    console.log(
+      `  Initialise a new npm project with ${output.value('npm init')}.`,
+    )
   }
   const scaffoldOptions: ScaffoldOptions = {
     installPlaywright,

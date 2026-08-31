@@ -7,14 +7,14 @@ const styles = {
   yellow: '\x1b[33m',
   red: '\x1b[31m',
   white: '\x1b[37m',
-  blueBackground: '\x1b[44m'
+  blueBackground: '\x1b[44m',
 }
-export const title = (message:string) =>
+export const title = (message: string) =>
   console.log(
-  `${styles.bold}${styles.blueBackground}${styles.white}======= ${message} =======${styles.reset}\n`,
-)
+    `${styles.bold}${styles.blueBackground}${styles.white}======= ${message} =======${styles.reset}\n`,
+  )
 
-export const italic = (message:string) =>
+export const italic = (message: string) =>
   console.log(`${styles.italic}${message}${styles.reset}\n`)
 
 export const success = (message: string) =>
