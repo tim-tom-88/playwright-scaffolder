@@ -1,9 +1,8 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import {
+import type {
   PackageManager,
-  PlaywrightSetup,
-  ScaffoldOptions,
+  PlaywrightSetup
 } from '../types/project'
 
 /**

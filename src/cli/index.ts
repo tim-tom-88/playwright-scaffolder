@@ -79,7 +79,7 @@ const main = async () => {
     } else {
       warning('Playwright project: @playwright/test not found')
       installPlaywright = await prompts.askInstallPlaywright()
-      createPlaywrightConfig = true
+      createPlaywrightConfig = installPlaywright
       architecture = await prompts.askArchitecture()
       testSuites = await prompts.askTestSuites()
     }
