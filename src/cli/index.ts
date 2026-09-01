@@ -88,7 +88,9 @@ const main = async () => {
 
   if (await prompts.confirmScaffold(directories)) {
     repo.scaffoldProject(projectRoot, directories)
-    output.success('Created scaffold structure', true)
+    await repo.generatePlaywrightConfig(projectRoot, scaffoldOptions)
+
+    output.success('Playwright scaffold created', true)
   } else {
     output.italic('Scaffolding cancelled', true)
   }
