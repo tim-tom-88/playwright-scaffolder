@@ -1,2 +1,6 @@
 export * from './inspectProject'
 export * from './scaffoldProject'
+export * from './playwrightConfig'
+export * from './filePlan'
+export * from './generatedFiles'
+export * from './packageJson'
