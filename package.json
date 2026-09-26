@@ -1,7 +1,7 @@
 {
   "name": "playwright-scaffolder",
   "version": "1.0.0",
-  "description": "Adding additional help to the existing playwright bootstrap",
+  "description": "An opinionated CLI for scaffolding maintainable Playwright test projects",
   "homepage": "https://github.com/tim-tom-88/playwright-scaffolder#readme",
   "bugs": {
     "url": "https://github.com/tim-tom-88/playwright-scaffolder/issues"
@@ -15,8 +15,29 @@
   "type": "commonjs",
   "main": "dist/cli/index.js",
   "bin": "dist/cli/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "scaffolding",
+    "cli"
+  ],
   "scripts": {
-    "build": "npx tsc",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check .",
+    "test": "npm run build && node --test test/*.test.js",
+    "test:unit": "npm run build && node --test test/unit.test.js",
+    "test:integration": "npm run build && node --test test/integration.test.js",
+    "test:e2e": "npm run build && node --test test/e2e.test.js",
+    "prepublishOnly": "npm test",
     "start": "node dist/cli/index.js",
     "format": "prettier --write .",
     "prepare": "husky"

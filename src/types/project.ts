@@ -16,3 +16,13 @@ export type ScaffoldOptions = {
   architecture: ArchitectureChoice
   testSuites: TestSuite[]
 }
+
+export type PlannedFile = {
+  path: string
+  content: string
+}
+
+export type ScaffoldPlan = {
+  directories: string[]
+  files: PlannedFile[]
+}
