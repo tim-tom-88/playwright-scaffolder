@@ -1,56 +1,49 @@
-# Playwright Scaffolder
+# QA Playwright
 
-An opinionated CLI that adds a maintainable test structure to a new or existing Playwright project. It detects the repository and package manager, preserves existing configuration where possible, and creates only the examples selected during setup.
-
-## Requirements
-
-- Node.js 20 or newer
-- A project containing a `package.json`
+An opinionated second-stage scaffolder for existing Playwright projects. Let Playwright handle installation, browsers, configuration, and CI; then add test structure and architecture examples with QA Playwright.
 
 ## Usage
 
-Install and run the package from the directory you want to scaffold:
+Requires Node.js 20 or newer. From your project directory:
 
 ```sh
-npx playwright-scaffolder
+npm init playwright@latest
+npx qa-playwright
 ```
 
-The interactive CLI can:
+The package must be published before the `npx` command is available from npm. To try this checkout, run `npm run build`, then run `node /absolute/path/to/playwright-scaffolder/dist/cli/index.js` from your initialized project.
 
-- detect npm, Yarn, pnpm, or Bun from its lockfile;
-- find an existing Playwright project, including one nested in a monorepo;
-- add UI, API, and integration test projects;
-- create page objects and optional reusable components;
-- create a typed fixture and helper example;
-- add missing Playwright scripts and, when requested, `@playwright/test` to `package.json`.
+The CLI checks for `@playwright/test` and a Playwright config. If either is missing, it tells you to run `npm init playwright@latest`, then rerun `npx qa-playwright`. Standard mode does not install dependencies or create configuration. BDD mode installs `playwright-bdd` and adds a separate BDD config.
 
-For CI or scripted use, pass all choices non-interactively:
+Setup asks, in order:
+
+1. Which directories to create under `tests/`: UI, API, and/or integration.
+2. Which architecture to use: page objects, page objects with components, or plain specs.
+3. Whether to use BDD with Gherkin features and `playwright-bdd`.
+4. Whether to create the displayed structure and examples.
+
+For non-interactive use:
 
 ```sh
-npx playwright-scaffolder \
-  --yes \
-  --install-playwright \
-  --architecture=page-objects-components \
-  --suites=ui,api,integration
+npx qa-playwright --yes --architecture=page-objects-components --suites=ui,api,integration
 ```
 
-Supported flags:
+| Flag             | Values                                            | Purpose                                              |
+| ---------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| `--yes`          | —                                                 | Skip prompts; defaults to UI tests with page objects |
+| `--architecture` | `page-objects`, `page-objects-components`, `none` | Select example architecture                          |
+| `--suites`       | comma-separated `ui`, `api`, `integration`        | Select test directories and example specs            |
 
-| Flag                   | Values                                            | Purpose                                            |
-| ---------------------- | ------------------------------------------------- | -------------------------------------------------- |
-| `--yes`                | —                                                 | Skip confirmation and use non-interactive defaults |
-| `--install-playwright` | —                                                 | Add `@playwright/test` when it is missing          |
-| `--create-config`      | —                                                 | Create `playwright.config.ts`                      |
-| `--architecture`       | `page-objects`, `page-objects-components`, `none` | Select generated architecture examples             |
-| `--suites`             | comma-separated `ui`, `api`, `integration`        | Select Playwright projects and test directories    |
+The former `--install-playwright` and `--create-config` flags are no longer supported. Use Playwright init first.
 
-## Example output
+## Generated structure
 
-Selecting page objects, components, and all suites creates:
+Selecting all suites with page objects and components creates:
 
 ```text
 tests/
 ├── api/
+│   └── example.spec.ts
 ├── components/
 │   └── example.component.ts
 ├── fixtures/
@@ -58,23 +51,24 @@ tests/
 ├── helpers/
 │   └── example.helper.ts
 ├── integration/
+│   └── example.spec.ts
 ├── pages/
 │   └── example.page.ts
 └── ui/
+    └── example.spec.ts
 ```
 
-The generated fixture imports the generated page object, so the examples are immediately consistent with the selected architecture. Existing example files are not overwritten.
+The UI spec uses the typed page-object fixture and, when selected, checks the reusable component. Plain specs import Playwright directly. UI examples use local markup; the integration example demonstrates UI/API interaction with mocked responses. The API example skips until you set `QA_API_URL` to your application's health endpoint.
+
+Run your tests with `npx playwright test` after scaffolding. Replace the example content with your application's pages, selectors, and assertions.
 
 ## Existing projects
 
-When `playwright.config.ts` or `playwright.config.js` already uses `defineConfig`, the CLI keeps the existing text and inserts only missing suite projects. Existing scripts and dependencies in `package.json` take precedence over the CLI defaults.
+Existing files are never overwritten. Playwright config, browser projects, package scripts, and original starter tests are preserved. BDD mode adds `playwright-bdd` as a dev dependency and updates the package manager lockfile. Suites are directories, not additional Playwright projects.
 
-## Limitations
+Generated files are TypeScript and use lowercase `tests/`. If your configuration uses a different `testDir`, custom `testMatch`, or exclusions, adjust it to discover the generated specs. Existing browser projects determine which suites run in each browser; configure separate API projects yourself if needed.
 
-- Automatic config merging requires a conventional `defineConfig({ ... })` call. Unconventional or computed configurations are rejected instead of being overwritten.
-- The CLI updates dependencies but does not run a package-manager install or download Playwright browsers.
-- JavaScript and TypeScript Playwright config files are supported; other config extensions are not currently detected.
-- Generated examples are starting points and intentionally contain no application-specific selectors or URLs.
+The CLI detects `.ts`, `.js`, `.mts`, `.mjs`, `.cts`, and `.cjs` Playwright config files. It can find nested Playwright packages; in a monorepo with multiple test packages, run it inside the intended package.
 
 ## Development
 
@@ -86,8 +80,22 @@ npm test
 npm run build
 ```
 
-The test suite includes unit coverage for detection, config generation, package merging and file plans; an integration scaffold; and an end-to-end invocation of the built CLI.
+Tests cover detection, file plans, generated TypeScript imports, prerequisite failures without filesystem changes, config preservation, and reruns that preserve user edits.
 
 ## Release
 
-`npm publish` runs the complete test suite through `prepublishOnly`. The published package contains `dist`, this README, and the license. Before the first public release, confirm the package name is available on npm and authenticate with the intended npm account.
+`npm publish` runs the test suite through `prepublishOnly`. The package includes `dist`, this README, and the license. Confirm that `qa-playwright` is available on npm and authenticate with the intended npm account before publishing.
+
+## BDD support
+
+Opt in interactively or use:
+
+```sh
+npx qa-playwright --yes --bdd --suites=ui,api,integration
+npx bddgen --config playwright.bdd.config.ts
+npx playwright test --config playwright.bdd.config.ts
+```
+
+`--bdd` replaces example specs with Gherkin scenarios in `tests/features/<suite>/` and matching TypeScript steps in `tests/steps/`. Page objects and components remain available through BDD fixtures. Each starter scenario has one outcome step; expand it with Given/When steps for your application's behavior.
+
+A separate `playwright.bdd.config.ts` inherits the detected Playwright config and browser projects, with BDD discovery settings. Review inherited project dependencies and custom filters for your setup. Generated `BDD.md` includes setup commands. Add `.features-gen/` to your project's `.gitignore` and regenerate after editing features or steps. BDD setup automatically installs `playwright-bdd` as a dev dependency using the Playwright package’s detected package manager, falling back to the repository package manager or npm. Installation failures stop scaffolding and report a retry command. Existing files are preserved, so review fixtures and config when enabling BDD in an already scaffolded project.

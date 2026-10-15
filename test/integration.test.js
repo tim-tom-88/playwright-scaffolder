@@ -15,8 +15,6 @@ test('scaffolds a complete project with internally valid imports', async (t) => 
   )
   t.after(() => fsp.rm(root, { recursive: true, force: true }))
   const scaffoldOptions = {
-    installPlaywright: true,
-    createPlaywrightConfig: true,
     architecture: 'page-objects-components',
     testSuites: ['ui', 'api', 'integration'],
   }
@@ -27,8 +25,6 @@ test('scaffolds a complete project with internally valid imports', async (t) => 
   const plan = repo.buildFilePlan(scaffoldOptions)
   repo.scaffoldProject(root, plan.directories)
   await repo.writePlannedFiles(root, plan)
-  await repo.generatePlaywrightConfig(root, scaffoldOptions)
-  await repo.updatePackageJson(root, scaffoldOptions)
 
   for (const file of plan.files)
     assert.equal((await fsp.stat(path.join(root, file.path))).isFile(), true)
@@ -47,9 +43,11 @@ test('scaffolds a complete project with internally valid imports', async (t) => 
   await fsp.writeFile(
     playwrightTypes,
     `export type Locator = { readonly value: unknown }
-export type Page = { goto(url: string): Promise<void>; getByTestId(id: string): Locator }
-export const test: { extend<T>(fixtures: Record<string, unknown>): unknown }
-export const expect: unknown
+export type Page = { goto(url: string): Promise<void>; setContent(html: string): Promise<void>; getByRole(role: string, options?: unknown): Locator; getByTestId(id: string): Locator }
+type Test = { (name: string, callback: (args: any) => Promise<void>): void; extend<T>(fixtures: Record<string, unknown>): Test; skip(condition: boolean, reason: string): void }
+export const test: Test
+export const expect: any
+declare global { const process: { env: Record<string, string | undefined> } }
 export function defineConfig(config: unknown): unknown
 `,
   )

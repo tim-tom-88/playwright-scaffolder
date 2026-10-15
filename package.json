@@ -1,5 +1,5 @@
 {
-  "name": "playwright-scaffolder",
+  "name": "qa-playwright",
   "version": "1.0.0",
   "description": "An opinionated CLI for scaffolding maintainable Playwright test projects",
   "homepage": "https://github.com/tim-tom-88/playwright-scaffolder#readme",
@@ -14,7 +14,9 @@
   "author": "Tom Hodgson",
   "type": "commonjs",
   "main": "dist/cli/index.js",
-  "bin": "dist/cli/index.js",
+  "bin": {
+    "qa-playwright": "dist/cli/index.js"
+  },
   "files": [
     "dist",
     "README.md",

@@ -11,8 +11,7 @@ export type ArchitectureChoice =
 export type TestSuite = 'ui' | 'api' | 'integration'
 
 export type ScaffoldOptions = {
-  installPlaywright: boolean
-  createPlaywrightConfig: boolean
+  bdd?: boolean
   architecture: ArchitectureChoice
   testSuites: TestSuite[]
 }

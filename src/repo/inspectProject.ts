@@ -57,7 +57,14 @@ export const detectPackageManager = (
   )?.manager
 }
 
-const playwrightConfigFiles = ['playwright.config.ts', 'playwright.config.js']
+const playwrightConfigFiles = [
+  'playwright.config.ts',
+  'playwright.config.js',
+  'playwright.config.mts',
+  'playwright.config.mjs',
+  'playwright.config.cts',
+  'playwright.config.cjs',
+]
 
 /**
  * Recursively searches for a project that declares @playwright/test.

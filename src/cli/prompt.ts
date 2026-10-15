@@ -2,19 +2,9 @@ import { confirm, select, checkbox } from '@inquirer/prompts'
 import * as output from './styling'
 import type { ArchitectureChoice, TestSuite } from '../types/project'
 
-export const askInstallPlaywright = async (): Promise<boolean> => {
-  return confirm({ message: 'Would you like to install Playwright?' })
-}
-
-export const askCreatePlaywrightConfig = async (): Promise<boolean> => {
-  return confirm({
-    message: 'Would you like to create a Playwright configuration file?',
-  })
-}
-
 export const askArchitecture = async (): Promise<ArchitectureChoice> => {
   return select({
-    message: 'Please select the setup type:',
+    message: 'Which architecture would you like for your examples?',
     choices: [
       { name: 'Page Objects', value: 'page-objects' },
       { name: 'Page Objects + Components', value: 'page-objects-components' },
@@ -25,11 +15,11 @@ export const askArchitecture = async (): Promise<ArchitectureChoice> => {
 
 export const askTestSuites = async (): Promise<TestSuite[]> => {
   return checkbox({
-    message: 'Which test suites would you like to scaffold?',
+    message: 'Which directories would you like under tests/?',
     choices: [
-      { name: 'UI', value: 'ui' },
-      { name: 'API', value: 'api' },
-      { name: 'Integration', value: 'integration' },
+      { name: 'UI (tests/ui)', value: 'ui', checked: true },
+      { name: 'API (tests/api)', value: 'api' },
+      { name: 'Integration (tests/integration)', value: 'integration' },
     ],
   })
 }
@@ -42,3 +32,9 @@ export const confirmScaffold = async (
     message: 'Create this structure?',
   })
 }
+
+export const askBdd = async (): Promise<boolean> =>
+  confirm({
+    message: 'Use BDD (Gherkin features with playwright-bdd)?',
+    default: false,
+  })
