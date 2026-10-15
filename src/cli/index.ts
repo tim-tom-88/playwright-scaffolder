@@ -13,6 +13,17 @@ import type {
 type CliOptions = Partial<ScaffoldOptions> & { yes: boolean }
 
 export const parseArguments = (args: string[]): CliOptions => {
+  for (const argument of args) {
+    if (
+      !['--yes', '--bdd'].includes(argument) &&
+      !argument.startsWith('--architecture=') &&
+      !argument.startsWith('--suites=')
+    ) {
+      throw new Error(
+        `Unsupported option: ${argument}. Initialise Playwright with npm init playwright@latest first.`,
+      )
+    }
+  }
   const valueFor = (name: string) =>
     args.find((argument) => argument.startsWith(`--${name}=`))?.split('=')[1]
   const architecture = valueFor('architecture')
@@ -42,8 +53,7 @@ export const parseArguments = (args: string[]): CliOptions => {
 
   return {
     yes: args.includes('--yes'),
-    installPlaywright: args.includes('--install-playwright'),
-    createPlaywrightConfig: args.includes('--create-config'),
+    ...(args.includes('--bdd') ? { bdd: true } : {}),
     ...(architecture === undefined
       ? {}
       : { architecture: architecture as ArchitectureChoice }),
@@ -55,14 +65,14 @@ export const runCli = async (args = process.argv.slice(2)) => {
   const cliOptions = parseArguments(args)
   const repositoryRoot = repo.findPackageJson(process.cwd())
 
-  output.title('PLAYWRIGHT SCAFFOLDER')
-  output.italic('Opinionated Playwright project setup')
+  output.title('QA PLAYWRIGHT')
+  output.italic('Opinionated structure for your existing Playwright project')
   if (!repositoryRoot) {
     output.error(
       `Project root: unable to determine (${output.value('package.json')} not found)`,
     )
     console.log(
-      `  Initialise a new npm project with ${output.value('npm init')}.`,
+      `  Initialise a new npm project with ${output.value('npm init playwright@latest')}, then run ${output.value('npx qa-playwright')} again.`,
     )
     return false
   }
@@ -84,45 +94,35 @@ export const runCli = async (args = process.argv.slice(2)) => {
 
   const playwrightSetup = repo.detectPlaywright(repositoryRoot)
   const projectRoot = playwrightSetup?.playwrightRoot ?? repositoryRoot
-  let installPlaywright = cliOptions.installPlaywright ?? false
-  let createPlaywrightConfig = cliOptions.createPlaywrightConfig ?? false
-
-  if (playwrightSetup) {
-    output.success(`Playwright project: ${output.value(projectRoot)}`)
-    if (playwrightSetup.playwrightConfig) {
-      createPlaywrightConfig = false
-      output.success(
-        `Playwright configuration: ${output.value(playwrightSetup.playwrightConfig)}`,
-      )
-    } else {
-      output.warning(
-        `Playwright configuration: ${output.value('@playwright/test')} is installed, but no supported config file was found`,
-      )
-      createPlaywrightConfig = cliOptions.yes
-        ? true
-        : await prompts.askCreatePlaywrightConfig()
-    }
-  } else {
-    output.warning('Playwright project: @playwright/test not found')
-    installPlaywright = cliOptions.yes
-      ? cliOptions.installPlaywright === true
-      : await prompts.askInstallPlaywright()
-    createPlaywrightConfig = installPlaywright
+  if (!playwrightSetup?.playwrightConfig) {
+    output.warning(
+      playwrightSetup
+        ? 'Playwright configuration not found'
+        : 'Playwright project: @playwright/test not found',
+    )
+    console.log(
+      '  Run npm init playwright@latest first, then rerun npx qa-playwright.',
+    )
+    return false
   }
+  output.success(`Playwright project: ${output.value(projectRoot)}`)
+  output.success(
+    `Playwright configuration: ${output.value(playwrightSetup.playwrightConfig)}`,
+  )
 
-  const architecture =
-    cliOptions.architecture ??
-    (cliOptions.yes ? 'none' : await prompts.askArchitecture())
   const testSuites =
     cliOptions.testSuites ??
-    (cliOptions.yes ? [] : await prompts.askTestSuites())
-  const scaffoldOptions: ScaffoldOptions = {
-    installPlaywright,
-    createPlaywrightConfig,
-    architecture,
-    testSuites,
-  }
-  const plan = repo.buildFilePlan(scaffoldOptions)
+    (cliOptions.yes ? ['ui'] : await prompts.askTestSuites())
+  const architecture =
+    cliOptions.architecture ??
+    (cliOptions.yes ? 'page-objects' : await prompts.askArchitecture())
+  const bdd =
+    cliOptions.bdd ?? (cliOptions.yes ? false : await prompts.askBdd())
+  const scaffoldOptions: ScaffoldOptions = { architecture, testSuites, bdd }
+  const plan = repo.buildFilePlan(
+    scaffoldOptions,
+    playwrightSetup.playwrightConfig,
+  )
   const shouldScaffold = cliOptions.yes
     ? true
     : await prompts.confirmScaffold(plan.directories)
@@ -132,19 +132,32 @@ export const runCli = async (args = process.argv.slice(2)) => {
     return false
   }
 
+  if (bdd) {
+    const bddPackageManager =
+      repo.detectPackageManager(projectRoot) ?? packageManager ?? 'npm'
+    output.italic(`Installing playwright-bdd with ${bddPackageManager}...`)
+    await repo.installBdd(projectRoot, bddPackageManager)
+  }
   repo.scaffoldProject(projectRoot, plan.directories)
   await repo.writePlannedFiles(projectRoot, plan)
-  if (createPlaywrightConfig || playwrightSetup?.playwrightConfig) {
-    await repo.generatePlaywrightConfig(projectRoot, scaffoldOptions)
-  }
-  await repo.updatePackageJson(projectRoot, scaffoldOptions)
   output.success('Playwright scaffold created', true)
+  if (bdd)
+    output.italic(
+      'BDD ready: playwright-bdd installed and playwright.bdd.config.ts created (existing files preserved). See BDD.md for generation and run commands.',
+    )
+  output.italic(
+    'Examples are in tests/. If your config uses a custom testDir or testMatch, include these directories before running them.',
+  )
   return true
 }
 
 if (require.main === module) {
-  runCli().catch((error: unknown) => {
-    output.error(error instanceof Error ? error.message : String(error), true)
-    process.exitCode = 1
-  })
+  runCli()
+    .then((completed) => {
+      if (!completed) process.exitCode = 1
+    })
+    .catch((error: unknown) => {
+      output.error(error instanceof Error ? error.message : String(error), true)
+      process.exitCode = 1
+    })
 }

@@ -9,8 +9,6 @@ const repo = require('../dist/repo')
 const { parseArguments } = require('../dist/cli/index')
 
 const options = (overrides = {}) => ({
-  installPlaywright: false,
-  createPlaywrightConfig: true,
   architecture: 'page-objects-components',
   testSuites: ['ui', 'api'],
   ...overrides,
@@ -52,37 +50,6 @@ test('isolates the filesystem boundary when checking TypeScript setup', (t) => {
   assert.equal(repo.findTsConfig('/another-project'), false)
 })
 
-test('creates and safely extends Playwright configuration', async (t) => {
-  const root = await temporaryDirectory()
-  t.after(() => fsp.rm(root, { recursive: true, force: true }))
-  await repo.generatePlaywrightConfig(root, options())
-  let config = await fsp.readFile(
-    path.join(root, 'playwright.config.ts'),
-    'utf8',
-  )
-  assert.match(config, /name: 'ui'/)
-  assert.match(config, /name: 'api'/)
-
-  await fsp.writeFile(
-    path.join(root, 'playwright.config.ts'),
-    "import { defineConfig } from '@playwright/test'\n\n// keep me\nexport default defineConfig({ timeout: 1000 })\n",
-  )
-  await repo.generatePlaywrightConfig(
-    root,
-    options({ createPlaywrightConfig: false, testSuites: ['integration'] }),
-  )
-  config = await fsp.readFile(path.join(root, 'playwright.config.ts'), 'utf8')
-  assert.match(config, /\/\/ keep me/)
-  assert.match(config, /name: 'integration'/)
-  assert.match(config, /timeout: 1000/)
-  await repo.generatePlaywrightConfig(
-    root,
-    options({ createPlaywrightConfig: false, testSuites: ['integration'] }),
-  )
-  config = await fsp.readFile(path.join(root, 'playwright.config.ts'), 'utf8')
-  assert.equal(config.match(/name: 'integration'/g).length, 1)
-})
-
 test('builds architecture-specific file plans', () => {
   const full = repo.buildFilePlan(options())
   assert.ok(full.files.some((file) => file.path.endsWith('example.page.ts')))
@@ -96,45 +63,100 @@ test('builds architecture-specific file plans', () => {
   assert.deepEqual(minimal.files, [])
 })
 
-test('merges package.json without replacing existing values', async (t) => {
-  const root = await temporaryDirectory()
-  t.after(() => fsp.rm(root, { recursive: true, force: true }))
-  await fsp.writeFile(
-    path.join(root, 'package.json'),
-    JSON.stringify({
-      name: 'fixture',
-      scripts: { test: 'custom-test' },
-      devDependencies: { typescript: '1.0.0' },
-    }),
-  )
-  await repo.updatePackageJson(root, options({ installPlaywright: true }))
-  const packageJson = JSON.parse(
-    await fsp.readFile(path.join(root, 'package.json'), 'utf8'),
-  )
-  assert.equal(packageJson.scripts.test, 'custom-test')
-  assert.equal(packageJson.scripts['test:ui'], 'playwright test --ui')
-  assert.equal(packageJson.devDependencies.typescript, '1.0.0')
-  assert.equal(packageJson.devDependencies['@playwright/test'], 'latest')
-  assert.equal(
-    fs.existsSync(path.join(root, 'package.json.playwright-scaffolder.tmp')),
-    false,
-  )
-})
-
 test('parses non-interactive CLI options', () => {
   assert.deepEqual(
     parseArguments([
       '--yes',
-      '--install-playwright',
       '--architecture=page-objects',
       '--suites=ui,integration',
     ]),
     {
       yes: true,
-      installPlaywright: true,
-      createPlaywrightConfig: false,
       architecture: 'page-objects',
       testSuites: ['ui', 'integration'],
     },
+  )
+})
+
+test('rejects obsolete bootstrap flags', () => {
+  assert.throws(
+    () => parseArguments(['--install-playwright']),
+    /npm init playwright@latest/,
+  )
+})
+
+test('BDD plans replace specs with features and architecture-aware steps', () => {
+  for (const architecture of [
+    'none',
+    'page-objects',
+    'page-objects-components',
+  ]) {
+    const plan = repo.buildFilePlan(
+      options({
+        architecture,
+        bdd: true,
+        testSuites: ['ui', 'api', 'integration'],
+      }),
+      'playwright.config.mjs',
+    )
+    const files = new Map(plan.files.map((file) => [file.path, file.content]))
+    for (const suite of ['ui', 'api', 'integration']) {
+      assert.match(
+        files.get(`tests/features/${suite}/example.feature`),
+        /Scenario:.*\n    Then /,
+      )
+      assert.match(
+        files.get(`tests/steps/${suite}.steps.ts`),
+        /createBdd\(test\)/,
+      )
+      assert.equal(files.has(`tests/${suite}/example.spec.ts`), false)
+    }
+    assert.match(
+      files.get('playwright.bdd.config.ts'),
+      /from '\.\/playwright.config.mjs'/,
+    )
+    assert.ok(!plan.directories.includes('BDD.m'))
+    if (architecture !== 'none') {
+      assert.match(files.get('tests/fixtures/test.ts'), /from 'playwright-bdd'/)
+      assert.match(files.get('tests/steps/ui.steps.ts'), /examplePage/)
+    }
+  }
+  assert.deepEqual(parseArguments(['--yes', '--bdd']), { yes: true, bdd: true })
+})
+
+test('installs BDD with each supported package manager in the target package', async (t) => {
+  const childProcess = require('node:child_process')
+  const { EventEmitter } = require('node:events')
+  const calls = []
+  t.mock.method(childProcess, 'spawn', (command, args, options) => {
+    calls.push({ command, args, options })
+    const child = new EventEmitter()
+    process.nextTick(() => child.emit('exit', 0, null))
+    return child
+  })
+  for (const manager of ['npm', 'yarn', 'pnpm', 'bun']) {
+    await repo.installBdd('/target/package', manager)
+    const call = calls.at(-1)
+    assert.equal(call.command, manager)
+    assert.equal(call.options.cwd, '/target/package')
+    assert.deepEqual(
+      call.args,
+      manager === 'npm'
+        ? ['install', '--save-dev', 'playwright-bdd']
+        : ['add', '--dev', 'playwright-bdd'],
+    )
+  }
+})
+
+test('reports an actionable error when the package manager cannot start', async (t) => {
+  const { EventEmitter } = require('node:events')
+  t.mock.method(require('node:child_process'), 'spawn', () => {
+    const child = new EventEmitter()
+    process.nextTick(() => child.emit('error', new Error('ENOENT')))
+    return child
+  })
+  await assert.rejects(
+    repo.installBdd('/target/package', 'pnpm'),
+    /Retry pnpm add --dev playwright-bdd in \/target\/package/,
   )
 })
